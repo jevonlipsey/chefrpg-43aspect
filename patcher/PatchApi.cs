@@ -1,0 +1,171 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using ChefRPG43.Verify;
+using Mono.Cecil;
+
+/// result of one PatchApi.Patch call. Output is non-null only when Reason is "ok", which
+/// also means the verifier ran on exactly these bytes and Failed is 0.
+public sealed class PatchResult
+{
+    /// the patched assembly, or null when nothing should be written
+    public byte[]? Output { get; init; }
+    /// "ok" | "already_patched" | "not_chef_rpg" | "verify_failed" | "error"
+    public string Reason { get; init; } = "error";
+    /// the patcher's progress log (what the cli prints)
+    public string Log { get; init; } = "";
+    /// every line the verifier printed, one per check
+    public string VerifyLog { get; init; } = "";
+    public int Passed { get; init; }
+    public int Failed { get; init; }
+    /// checks that could not run in this VerifyMode (always 0 in Full)
+    public int Skipped { get; init; }
+    public string[] Failures { get; init; } = Array.Empty<string>();
+    public string Version { get; init; } = PatchApi.Version;
+    public VerifyMode Mode { get; init; }
+    public long PatchMillis { get; init; }
+    public long VerifyMillis { get; init; }
+    /// sha256 of Output as lowercase hex, or null
+    public string? Sha256 { get; init; }
+
+    public bool Ok => Reason == "ok";
+    public string Summary => Checks.FormatSummary(Passed, Failed, Skipped);
+}
+
+/// an assembly resolver that resolves nothing. the patcher never needs a unity assembly
+/// (its unity calls are built by hand), so this is what it reads with when the host has none.
+/// anything that does try to resolve fails loudly instead of quietly binding to the host runtime.
+public sealed class NullAssemblyResolver : IAssemblyResolver
+{
+    public AssemblyDefinition Resolve(AssemblyNameReference name) =>
+        throw new AssemblyResolutionException(name);
+
+    public AssemblyDefinition Resolve(AssemblyNameReference name, ReaderParameters parameters) =>
+        throw new AssemblyResolutionException(name);
+
+    public void Dispose() { }
+}
+
+/// in-memory entry point for the patcher: bytes in, bytes out, verified. used by the cli
+/// and by the browser (wasm) host, so it does no file or console i/o of its own.
+public static class PatchApi
+{
+    public const string Version = "v5.7";
+
+    // the patcher keeps working refs in statics and the log goes through Console, so
+    // one patch at a time
+    private static readonly object Gate = new();
+
+    /// patches a Chef RPG Assembly-CSharp.dll and verifies the result before returning it.
+    /// refs resolves unity assemblies for VerifyMode.Full and may be null for
+    /// VerifyMode.ReferenceFree (null in Full mode is an error).
+    public static PatchResult Patch(byte[] input, VerifyMode mode, IAssemblyResolver? refs)
+    {
+        lock (Gate)
+        {
+            var log = new StringWriter();
+            var previous = Console.Out;
+            Console.SetOut(log);
+            try
+            {
+                return PatchCore(input, mode, refs, log);
+            }
+            catch (Exception ex)
+            {
+                log.WriteLine($"[!] {ex.GetType().Name}: {ex.Message}");
+                log.WriteLine(ex.StackTrace);
+                return Fail("error", mode, log);
+            }
+            finally
+            {
+                Console.SetOut(previous);
+            }
+        }
+    }
+
+    private static PatchResult PatchCore(byte[] input, VerifyMode mode, IAssemblyResolver? refs, StringWriter log)
+    {
+        if (input == null || input.Length == 0)
+        {
+            log.WriteLine("[!] input is empty");
+            return Fail("error", mode, log);
+        }
+        if (mode == VerifyMode.Full && refs == null)
+        {
+            log.WriteLine("[!] VerifyMode.Full needs an assembly resolver for the unity references");
+            return Fail("error", mode, log);
+        }
+
+        log.WriteLine($"[+] patching assembly ({input.Length} bytes), verify mode: {mode}");
+        var clock = Stopwatch.StartNew();
+        byte[] patched;
+
+        // the patcher itself resolves nothing, so it never gets the host's resolver
+        AssemblyDefinition asm;
+        try
+        {
+            asm = AssemblyDefinition.ReadAssembly(new MemoryStream(input),
+                new ReaderParameters { AssemblyResolver = new NullAssemblyResolver() });
+        }
+        catch (Exception ex)
+        {
+            log.WriteLine($"[!] input is not a readable .net assembly ({ex.GetType().Name}: {ex.Message})");
+            return Fail("not_chef_rpg", mode, log);
+        }
+
+        using (asm)
+        {
+            var types = new HashSet<string>(asm.MainModule.Types.Select(t => t.Name));
+            if (types.Contains("ChefRPG43SafeArea"))
+            {
+                log.WriteLine("[!] this assembly is already patched (it contains ChefRPG43SafeArea). patch the original Assembly-CSharp.dll");
+                return Fail("already_patched", mode, log);
+            }
+            if (!types.Contains("SettingsPanel") || !types.Contains("LetterBoxer"))
+            {
+                log.WriteLine("[!] this is not Chef RPG's Assembly-CSharp.dll (no SettingsPanel / LetterBoxer type)");
+                return Fail("not_chef_rpg", mode, log);
+            }
+
+            patched = Program.PatchAssembly(asm);
+        }
+        long patchMs = clock.ElapsedMilliseconds;
+
+        // gate on the verifier, run on the bytes we are about to hand out
+        clock.Restart();
+        var verifyLog = new StringWriter();
+        var checks = new Checks(verifyLog);
+        using (var ms = new MemoryStream(patched))
+        using (var module = ModuleDefinition.ReadModule(ms,
+                   new ReaderParameters { AssemblyResolver = refs ?? new NullAssemblyResolver() }))
+        {
+            VerifyRunner.Run(checks, module, mode, Program.ReadHelperAssembly());
+        }
+        checks.Summarize();
+        long verifyMs = clock.ElapsedMilliseconds;
+
+        bool ok = checks.Failed == 0;
+        if (!ok) log.WriteLine($"[!] verification failed ({checks.Failed} check(s)); no output");
+        return new PatchResult
+        {
+            Output = ok ? patched : null,
+            Reason = ok ? "ok" : "verify_failed",
+            Log = log.ToString(),
+            VerifyLog = verifyLog.ToString(),
+            Passed = checks.Passed,
+            Failed = checks.Failed,
+            Skipped = checks.Skipped,
+            Failures = checks.Failures.ToArray(),
+            Mode = mode,
+            PatchMillis = patchMs,
+            VerifyMillis = verifyMs,
+            Sha256 = ok ? Convert.ToHexString(SHA256.HashData(patched)).ToLowerInvariant() : null,
+        };
+    }
+
+    private static PatchResult Fail(string reason, VerifyMode mode, StringWriter log) =>
+        new() { Reason = reason, Log = log.ToString(), Mode = mode };
+}

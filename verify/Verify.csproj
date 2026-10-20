@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>ChefRPG43.Verify</AssemblyName>
+    <RootNamespace>ChefRPG43.Verify</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mono.Cecil" Version="0.11.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- the shipped display policy, compiled in so the simulator drives the real code -->
+    <Compile Include="../patcher/safehelper/DisplayPolicy.cs" Link="DisplayPolicy.cs" />
+  </ItemGroup>
+
+</Project>

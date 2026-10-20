@@ -1,0 +1,51 @@
+# Build output
+bin/
+obj/
+build/
+dist/
+*.user
+
+# Web patcher build output
+web/dist/
+web/wasm/bin/
+web/wasm/obj/
+node_modules/
+
+# Original copyrighted binaries
+original/
+orig/
+verify/remote/
+Assembly-CSharp-43.dll
+Assembly-CSharp-43-win.dll
+Assembly-CSharp.dll
+
+# Decompiled game code
+decomp*/
+
+# patcher diagnostics pulled off the device
+chefrpg43.txt
+steam-*.log
+Player.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# python bytecode
+__pycache__/
+
+# never publish game assemblies (original or patched) or other binaries; only the prebuilt helper ships
+Assembly-CSharp*.dll
+*.dll
+!patcher/safehelper/SafeHelper.dll
+*.exe
+*.pdb
+*.bak*
+*.dat
+
+# dev artifacts and device captures
+tree.txt
+*.log
+chefrpg43*.txt
+*.png
+*.jpg

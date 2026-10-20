@@ -1,0 +1,111 @@
+name: release
+
+# on a v* tag (or a manual run with a tag): publish a self-contained patcher per platform (no .net
+# needed to run them), zip each with patch.py, docs/INSTALL.md and README-FIRST.txt, attach to a
+# release. only the patcher is released, never a game or patched game dll.
+# SafeHelper.dll is prebuilt and committed (its csproj points at a local steam
+# install), so it is not built here.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "release tag (an existing tag, e.g. v5.7)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    name: build ${{ matrix.rid }}
+    # the mac binaries are built on macos so the sdk ad-hoc signs them (unsigned arm64 binaries
+    # are killed by macos); the others build on linux
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - rid: osx-arm64
+            name: macos-arm64
+            exe: patcher
+            os: macos-latest
+          - rid: osx-x64
+            name: macos-x64
+            exe: patcher
+            os: macos-latest
+          - rid: win-x64
+            name: windows-x64
+            exe: patcher.exe
+            os: ubuntu-latest
+          - rid: linux-x64
+            name: linux-x64
+            exe: patcher
+            os: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: publish ${{ matrix.rid }}
+        run: >
+          dotnet publish patcher -c Release -r ${{ matrix.rid }}
+          --self-contained -p:PublishSingleFile=true -o out/publish
+
+      - name: stage zip contents
+        run: |
+          set -euo pipefail
+          pkg="chefrpg-43aspect-${TAG}-${{ matrix.name }}"
+          mkdir -p "$pkg"
+          cp "out/publish/${{ matrix.exe }}" "$pkg/"
+          chmod +x "$pkg/${{ matrix.exe }}"
+          cp patch.py "$pkg/"
+          cp docs/INSTALL.md "$pkg/INSTALL.md"
+          cp tools/README-FIRST.txt "$pkg/README-FIRST.txt"
+          zip -r "$pkg.zip" "$pkg"
+          echo "ZIP=$pkg.zip" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ env.ZIP }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: zips
+          merge-multiple: true
+
+      - name: release notes
+        run: |
+          cat > notes.md <<'NOTES'
+          Self-contained Chef RPG 4:3 patchers (no .NET install needed). Pick the zip for your system:
+          `windows-x64`, `macos-arm64` (Apple silicon), `macos-x64` (Intel), `linux-x64`.
+
+          - **Windows:** drag `Assembly-CSharp.dll` from `Chef RPG_Data\Managed` onto `patcher.exe`, then follow the printed steps.
+          - **macOS / Linux:** `./patcher "/path/to/Managed"`, or `python3 patch.py "/path/to/Managed"` (backs up and installs).
+          - **No install at all:** the web patcher, <https://jevonlipsey.github.io/chefrpg-43aspect/>, runs in your browser.
+
+          See `README-FIRST.txt` in each zip and [docs/INSTALL.md](https://github.com/jevonlipsey/chefrpg-43aspect/blob/main/docs/INSTALL.md).
+
+          **No game code is included.** These are only the patch tools; you patch your own copy of the game, and the patcher refuses to write anything that fails its checks.
+          NOTES
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          files: zips/*.zip
+          body_path: notes.md
+          generate_release_notes: true
