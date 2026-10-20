@@ -68,6 +68,7 @@ This runs the patcher, verifies the result, **backs up the original to `Assembly
 
 | Platform | Folder |
 |---|---|
+| DroidDeck (internal proot environment) | `/root/.local/share/Steam/steamapps/common/Chef RPG/Chef RPG_Data/Managed/` |
 | Windows (Steam) | `C:\Program Files (x86)\Steam\steamapps\common\Chef RPG\Chef RPG_Data\Managed\` |
 | Linux / Steam Deck (Windows build under Proton) | `~/.local/share/Steam/steamapps/common/Chef RPG/Chef RPG_Data/Managed/` |
 | macOS | `~/Library/Application Support/Steam/steamapps/common/Chef RPG/ChefRPG.app/Contents/Resources/Data/Managed/` |
@@ -95,9 +96,10 @@ DroidDeck runs Valve's ARM64 Steam client inside an in-app proot Linux runtime, 
 
 Getting at the game's files:
 
-- The Steam library lives inside DroidDeck's own Linux environment, not in ordinary Android storage. **The exact on-disk location is unconfirmed — check your app's file manager / docs.**
-- Version 0.3.2 added the ability to browse DroidDeck's Linux filesystem from its File Manager, and 0.4.0 added a desktop mode with a file manager and terminal (per the [release coverage](https://retrohandhelds.gg/droiddeck-brings-steamos-to-android-in-an-app/) and the [DroidDeck site](https://droiddeck.app/)). **How to copy files between that environment and Android storage is unconfirmed — check your app's file manager / docs.**
-- Inside the game folder the file you want is `Chef RPG_Data/Managed/Assembly-CSharp.dll` (the same layout as the Windows build).
+- Inside DroidDeck's Linux environment (e.g. via its desktop terminal or file manager), the Steam library is located at:
+  `/root/.local/share/Steam/steamapps/common/Chef RPG/Chef RPG_Data/Managed/Assembly-CSharp.dll`
+- Version 0.3.2 added the ability to browse DroidDeck's Linux filesystem from its File Manager, and 0.4.0 added a desktop mode with a file manager and terminal (per the [release coverage](https://retrohandhelds.gg/droiddeck-brings-steamos-to-android-in-an-app/) and the [DroidDeck site](https://droiddeck.app/)).
+- Copy `Assembly-CSharp.dll` out to your Android storage or patch it directly in desktop mode.
 
 Display settings (the settings cog, per this project's own testing): **Resolution** and **16:9 game fit**. See [Display settings](#4-display-settings-to-confirm) below. (These menu names were not found in public sources, only in this project's notes; **confirm them in your version**.)
 

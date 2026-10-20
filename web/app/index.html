@@ -13,7 +13,7 @@
 <div class="wrap">
 
   <header class="head">
-    <h1>Chef RPG 4:3 Patcher <span id="version" class="ver" hidden></span></h1>
+    <h1>Chef RPG 4:3 Patcher</h1>
     <p class="lede">Makes Chef RPG fill 4:3 screens (Retroid Pocket, DroidDeck/GameNative, 4:3 monitors) with the HUD kept inside the view.</p>
     <p class="privacy">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.7-4.7 1.4 1.4-6.1 6.1Z"/></svg>
@@ -43,7 +43,8 @@
       <h2 id="pick-title"><span class="step">1</span> Choose your game file</h2>
       <p>Select the <code>Assembly-CSharp.dll</code> from your own copy of the game:</p>
       <ul class="paths">
-        <li><span class="os">Windows, Linux, Steam Deck, Android containers</span><code class="path">Chef RPG_Data/Managed/Assembly-CSharp.dll</code></li>
+        <li><span class="os">DroidDeck</span><code class="path">/root/.local/share/Steam/steamapps/common/Chef RPG/Chef RPG_Data/Managed/Assembly-CSharp.dll</code></li>
+        <li><span class="os">Windows, Linux, Steam Deck, GameNative</span><code class="path">Chef RPG_Data/Managed/Assembly-CSharp.dll</code></li>
         <li><span class="os">macOS</span><code class="path">ChefRPG.app/Contents/Resources/Data/Managed/Assembly-CSharp.dll</code></li>
       </ul>
 
@@ -133,8 +134,8 @@
   </main>
 
   <footer class="foot">
-    <p>Unofficial fan tool, not affiliated with or endorsed by World 2 Studio Inc. It contains no game code and only modifies your own legally owned copy of the file.</p>
-    <p><a href="https://github.com/jevonlipsey/chefrpg-43aspect">Source on GitHub</a> · MIT licensed</p>
+    <p>Not affiliated with or endorsed by World 2 Studio Inc. It contains no game code and only modifies your own legally owned copy of the file.</p>
+    <p><a href="https://github.com/jevonlipsey/chefrpg-43aspect">Source on GitHub</a> · MIT · <span id="version" class="ver" hidden></span></p>
   </footer>
 </div>
 

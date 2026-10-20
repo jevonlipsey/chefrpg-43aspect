@@ -144,7 +144,7 @@
   function runtimeReady() {
     loadState = 'ready';
     el.runtime.classList.add('ready');
-    el.runtimeText.textContent = 'Patcher ready. Works offline now.';
+    el.runtime.hidden = true;
     el.runtimeBar.setAttribute('aria-valuenow', '100');
     try { if (globalThis.Chef43 && globalThis.Chef43.version) setVersion(globalThis.Chef43.version); } catch (e) { /* optional */ }
     announce('Patcher ready.');
