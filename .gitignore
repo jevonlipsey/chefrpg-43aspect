@@ -49,3 +49,6 @@ tree.txt
 chefrpg43*.txt
 *.png
 *.jpg
+
+# personal device notes for claude code (adb serial, ssh setup); never publish
+CLAUDE.local.md

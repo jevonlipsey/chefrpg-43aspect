@@ -100,8 +100,10 @@ Getting at the game's files:
   `/root/.local/share/Steam/steamapps/common/Chef RPG/Chef RPG_Data/Managed/Assembly-CSharp.dll`
 - Version 0.3.2 added the ability to browse DroidDeck's Linux filesystem from its File Manager, and 0.4.0 added a desktop mode with a file manager and terminal (per the [release coverage](https://retrohandhelds.gg/droiddeck-brings-steamos-to-android-in-an-app/) and the [DroidDeck site](https://droiddeck.app/)).
 - Copy `Assembly-CSharp.dll` out to your Android storage or patch it directly in desktop mode.
+- The game's logs (and `chefrpg43.txt`) are inside the Proton prefix:
+  `/root/.local/share/Steam/steamapps/compatdata/1796790/pfx/drive_c/users/steamuser/AppData/LocalLow/World 2 Studio Inc/Chef RPG/`
 
-Display settings (the settings cog, per this project's own testing): **Resolution** and **16:9 game fit**. See [Display settings](#4-display-settings-to-confirm) below. (These menu names were not found in public sources, only in this project's notes; **confirm them in your version**.)
+Display settings (the settings cog): **Resolution** and **16:9 game fit**. See [Display settings](#4-display-settings) below. These names come from testing on a Retroid Pocket Nova; other DroidDeck versions may label them differently.
 
 ### GameNative
 
@@ -116,7 +118,7 @@ Getting at the game's files, from [a GitHub discussion on file access](https://g
 
 Display and resolution settings for GameNative containers: **unconfirmed — check your app's container settings.** The goal is the same as below: give the game a 4:3 screen (for a 4:3 handheld, the panel's native size) and do not letterbox it to 16:9.
 
-## 4. Display settings to confirm
+## 4. Display settings
 
 All platforms:
 
@@ -156,7 +158,7 @@ Fallback if the game still starts at the wrong size: add the Steam launch option
 
 | Problem | What to do |
 |---|---|
-| Black bars remain on a 4:3 screen | Almost always the container, not the game. Set the container's resolution to the panel's native size and turn 16:9 fit to Stretch (section 4), then fully relaunch both apps. Check `CHEFRPG43` camera lines in `Player.log`: a camera rect covering the whole screen means any bars are the container's. |
+| Black bars remain on a 4:3 screen | Almost always the container, not the game. Set the container's resolution to the panel's native size and turn 16:9 fit to Stretch (section 4), then fully relaunch both apps. Check the `[ChefRPG43] render cam 'Main Camera'` line in `Player.log`: a `pix=` rect covering the whole screen means any bars are the container's. |
 | Game will not start / black screen | Restore `Assembly-CSharp.dll.bak` over `Assembly-CSharp.dll`. If the problem is gone, the patch does not suit your setup; open an issue with your `Player.log`. |
 | "already patched" (exit code 3) | The file in the folder is already patched. Restore the original (`.bak`, or Steam **Verify integrity of game files**) and patch that. |
 | Verification fails / "game changed" | The game was probably updated and the patch no longer matches. Nothing is written when verification fails, so your install is safe. Wait for a new release or open an issue. |

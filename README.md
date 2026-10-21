@@ -243,15 +243,19 @@ To verify the patch loaded, `Player.log` and `<persistentDataPath>/chefrpg43.txt
 `CHEFRPG43` breadcrumbs:
 
 - once per boot: `sysW` / `sysH` (the display size), `scrW` / `scrH` (the framebuffer *before* the
-  patch asks for a change), `newScrW` / `newScrH` (immediately after, so usually stale — Unity
-  applies the resize at end of frame), plus a one-shot `lateScrW` / `lateScrH` / `lateFull` taken on
-  the first settings-panel frame.
-- every 300 frames: the live world camera — `camName`, `camDepth`, `camScrW` / `camScrH`,
-  `camTexture`, `camRectX` / `camRectY` / `camRectW` / `camRectH` (the camera's actual viewport in
-  pixels), `camOrtho`, and the pixel-perfect component's `ppRefW` / `ppRefH` / `ppAssets` /
-  `ppCropX` / `ppCropY` / `ppStretch` / `ppUpscale` / `ppSnap`. A `camRect` that covers the whole
-  screen means the game is filling its frame and any remaining bars are the container's; a
-  `camScrH` of 720 means the game was handed a 16:9 frame.
+  patch asks for a change), `modes` (how many 4:3 modes the picker offers), `newScrW` / `newScrH`
+  (immediately after, so usually stale — Unity applies the resize at end of frame), plus a one-shot
+  `lateScrW` / `lateScrH` / `lateFull` taken on the first settings-panel frame. In `Player.log` the
+  label and the number are two separate log entries, so the value sits on the entry after the label;
+  `chefrpg43.txt` has them on one line.
+
+`Player.log` also gets `[ChefRPG43]` lines from the helper on each scene load: `display` / `view`
+(the screen size and the 4:3 view it settled on), `layout moved` / `parked panel` (what the HUD
+containment did), and a one-shot `render` dump of every camera, pixel-perfect component and root
+canvas. A `render cam 'Main Camera'` whose `pix=` covers the whole screen (e.g. `width:1280.00,
+height:960.00`) means the game is filling its frame and any remaining bars are the container's; a
+720-high screen means the game was handed a 16:9 frame. (Earlier builds logged the camera every 300
+frames; v5.7 dropped that because it caused a regular hitch under emulation.)
 
 ## Build from source
 

@@ -61,11 +61,11 @@ The tool rewrites the game's IL. It doesn't ship game code, and it needs a legal
 
 ### Hardcoded paths
 
-Two files contain absolute paths to the developer's Steam install: `DEV_MANAGED` in `patcher/Program.cs` and `UNITY_MANAGED` in `verify/Program.cs`. The `HintPath`s in `patcher/safehelper/SafeHelper.csproj` point there too. Expect a build or verify failure on another machine until these are changed. The verifier only adds the Steam path to its resolver if the directory exists, so it degrades rather than failing outright.
+`DEV_MANAGED` in `patcher/Program.cs` and `UNITY_MANAGED` in `verify/Program.cs` point at the mac Steam install under the current user's home folder. The `HintPath`s in `patcher/safehelper/SafeHelper.csproj` use the same location through `$(ChefManaged)`; pass `-p:ChefManaged=<Managed dir>` to build the helper elsewhere. Only the zero-argument dev default and the standalone verifier read these paths, and the verifier skips a directory that doesn't exist, so on another machine it degrades rather than failing outright.
 
 ### Device and deploy
 
-The Windows build runs under Wine / Proton on a Retroid Pocket Nova (hostname `droiddeck` in ssh). Its Proton prefix has no .NET runtime, so patch and verify happen on the mac and the result gets pushed over ssh. `README.md` has the exact push sequence (write `.new`, check sha256, then `mv`). Don't replace the live dll without the hash check.
+The Windows build runs under Wine / Proton on a Retroid Pocket Nova (hostname `droiddeck` in ssh). Its Proton prefix has no .NET runtime, so patch and verify happen on the mac and the result gets pushed over ssh. `README.md` has the exact push sequence (write `.new`, check sha256, then `mv`). Don't replace the live dll without the hash check. Access, device paths, launching and stopping the game, and how to run a device test are in `CLAUDE.local.md`, which is gitignored and holds personal device details.
 
 `verify/remote/` holds device-side captures and is gitignored. `verify/remote/win-refs` supplies Windows-only references so that Windows dlls resolve during verify.
 
@@ -78,4 +78,8 @@ The Windows build runs under Wine / Proton on a Retroid Pocket Nova (hostname `d
 
 ### Version history
 
-Changes are versioned in commit messages (`v5.4`, `v5.5`, `v5.6`; this work is the v5.7 display policy, not yet committed). The 4:3 approach has changed several times. In particular, v5.4 failed because of the CoreLib reference described above, and the URP patch was removed after it broke rendering. Check `git log` before reintroducing an approach.
+Changes are versioned in commit messages and tags. The public repo (github.com/jevonlipsey/chefrpg-43aspect) starts at v5.7 as a single fresh commit, because the earlier history contained a patched game dll. The v5.4–v5.6 history is not in this repo; it lives only in a local backup outside the repo. The 4:3 approach has changed several times. In particular, v5.4 failed because of the CoreLib reference described above, and the URP patch was removed after it broke rendering. Check `git log` and the notes here before reintroducing an approach.
+
+### Publishing
+
+The repo is public. Never commit a game assembly (original or patched), decompiler output, device logs or screenshots; `.gitignore` blocks every `.dll` except `patcher/safehelper/SafeHelper.dll`, and that helper is built with `DebugType=none` and a path map so no local paths end up inside it. Releases ship only the self-contained patcher binaries (`release.yml`, on a `v*` tag), never a patched dll. GitHub Pages serves the web patcher from `pages.yml` on pushes to `main`.
